@@ -1,34 +1,61 @@
 import { type Task } from "./tasks.types.js";
+import usersService, { UsersService } from "../users/users.service.js";
+import { TaskController } from "./tasks.controller.js";
+import usersRouter from "../users/users.routes.js";
+
 //Service for Tasks
 export class TasksService{
-    private tasks: Task[] = [
-        {id: 1, title: "Вивчити Node.js", isCompleted: false},
-        {id: 2, title: "Встановити Postman", isCompleted: true}
-    ];
+    private tasksByUserId = new Map<number, Task[]>();
 
-    private nextId: number = 3;
+    private nextTaskIds = new Map<number, number>();
 
-    public getAll(): Task[]{
-        return this.tasks
+    private usersService : UsersService;
+
+    constructor(usersService: UsersService){
+        this.usersService = usersService;
     }
 
-    public create(title: string): Task{
+    public getAll(userID: number): Task[]{
+        return this.tasksByUserId.get(userID) || [];
+    }
+
+    public create(title: string, userID: number): Task | null{
+        const userExists = this.usersService.getById(userID);
+        if(!userExists){
+            return null;
+        }
+        
+        if(!this.tasksByUserId.has(userID)){
+            this.tasksByUserId.set(userID, []);
+            this.nextTaskIds.set(userID, 1);
+        }
+
+        const newTaskId = this.nextTaskIds.get(userID)!;
+
         const newTask: Task = {
-            id: this.nextId++,
+            id: newTaskId,
             title: title,
             isCompleted: false,
-            createAt: new Date()
+            createdAt: new Date()
         };
-        this.tasks.push(newTask);
+
+        this.tasksByUserId.get(userID)!.push(newTask);
+
+        this.nextTaskIds.set(userID, newTaskId + 1);
         return newTask;
     }
 
-    public update(id: number, title?: string, isCompleted?: boolean): Task | null{
-        const task = this.tasks.find(t => t.id === id);
-        if(!task){
+    public update(userId:number, taskId: number, title?: string, isCompleted?: boolean): Task | null{
+        const userTasks = this.tasksByUserId.get(userId);
+        if(!userTasks){
             return null;
         }
 
+        const task = userTasks.find(t => t.id === taskId);
+
+        if(!task){
+            return null;
+        }
         if(title !== undefined){
             task.title = title;
         }
@@ -38,13 +65,19 @@ export class TasksService{
         return task;
     }
 
-    public delete(id: number): boolean{
-        const taskIndex = this.tasks.findIndex(t => t.id === id);
+    public delete(userId:number, taskId: number): boolean{
+        const userTasks = this.tasksByUserId.get(userId);
+        if(!userTasks){
+            return false;
+        }
+        const taskIndex = userTasks.findIndex(t => t.id === taskId);
         if(taskIndex === -1){
             return false;
         }
 
-        this.tasks.splice(taskIndex, 1);
+        userTasks.splice(taskIndex, 1);
         return true;
     }
 }
+
+export default new TasksService(usersService);

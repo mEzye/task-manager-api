@@ -1,9 +1,18 @@
 import { type User } from "./users.types.js";
 
-export class UserService{
+export class UsersService{
     private users: User[] = [];
 
     private nextID: number = 0;
+
+    public getById(id: number): User | null {
+        const user = this.users.find(u => u.id === id);
+        if(!user){
+            return null;
+        }
+
+        return user;
+    }
 
     public getAll(): User[]{
         return this.users;
@@ -42,3 +51,5 @@ export class UserService{
         return true;
     }
 }
+
+export default new UsersService();
