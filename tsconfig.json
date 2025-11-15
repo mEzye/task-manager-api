@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2020",         /* В яку версію JS компілювати */
-    "module": "NodeNext",      /* Сучасна система модулів для Node */
-    "moduleResolution": "NodeNext",
-    "esModuleInterop": true,   /* Для сумісності import/require */
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext", // <-- Поверніть це
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,            /* Вмикає всі суворі перевірки - це важливо */
-    "skipLibCheck": true,      /* Не перевіряти типи у бібліотеках */
-    "outDir": "./dist"         /* Куди складати скомпільовані .js файли */
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "./dist"
   },
-  "include": ["src/**/*"]      /* Які файли компілювати */
+  "include": ["src/**/*"]
 }
