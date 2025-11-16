@@ -9,6 +9,18 @@ export class UserController{
         const users = this.usersService.getAll();
         res.json(users);
     }
+    
+    // GET /api/users/:id
+    getById = (req: Request, res: Response) => {
+        const { id } = req.params;
+        const user = this.usersService.getById(parseInt(id));
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        
+        res.json(user);
+    }
 
     //POST /api/users
     create = (req: Request, res:Response) =>{
