@@ -1,14 +1,25 @@
 import {type Request, type Response} from 'express';
-import { UserService } from './users.service.js';
-import { networkInterfaces } from 'os';
+import usersService from './users.service.js';
 
 export class UserController{
-    private userService = new UserService();
+    private usersService = usersService;
 
     //GET /api/users
     getAll = (req: Request, res: Response) =>{
-        const users = this.userService.getAll();
+        const users = this.usersService.getAll();
         res.json(users);
+    }
+    
+    // GET /api/users/:id
+    getById = (req: Request, res: Response) => {
+        const { id } = req.params;
+        const user = this.usersService.getById(parseInt(id));
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        
+        res.json(user);
     }
 
     //POST /api/users
@@ -18,7 +29,7 @@ export class UserController{
             return res.status(400).json({message: "Email is required"});
         }
 
-        const newUser = this.userService.create(email, name);
+        const newUser = this.usersService.create(email, name);
         res.status(201).json(newUser);
     }
 
@@ -27,7 +38,7 @@ export class UserController{
         const {id} = req.params;
         const {email, name} = req.body || {};
 
-        const updateUser = this.userService.update(parseInt(id), email, name);
+        const updateUser = this.usersService.update(parseInt(id), email, name);
         if(!updateUser){
             return res.status(404).json({message: "User not found"});
         }
@@ -36,7 +47,7 @@ export class UserController{
     //DELETE /api/users/:id
     delete = (req: Request, res: Response) => {
         const {id} = req.params;
-        const success = this.userService.delete(parseInt(id));
+        const success = this.usersService.delete(parseInt(id));
         
         if(!success){
             return res.status(404).json({message: "User not found"});
