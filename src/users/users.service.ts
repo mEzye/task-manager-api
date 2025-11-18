@@ -14,15 +14,27 @@ export class UsersService{
         return user;
     }
 
+    public findByEmail(email:string) : User | null{
+        if(!email){
+            return null;
+        }
+        const user = this.users.find(u => u.email === email);
+        if(!user){
+            return null;
+        }
+        return user;
+    }
+
     public getAll(): User[]{
         return this.users;
     }
 
-    public create(email: string, name?:string) : User{
+    public create(email: string, password:string, name?:string) : User{
         const newUser: User = {
             id: this.nextID++,
             email: email,
-            name: name
+            name: name,
+            password:password
         };
         this.users.push(newUser);
         return newUser;
