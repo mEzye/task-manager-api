@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { TaskController } from "./tasks.controller.js";
+import { protect } from "../middleware/auth.middleware.js";
 
 const tasksRouter = Router();
 
 const controller = new TaskController();
 
-tasksRouter.get('/', controller.getAll);
-tasksRouter.post('/', controller.create);
-tasksRouter.put('/:id', controller.update);
-tasksRouter.delete('/:id', controller.delete);
+tasksRouter.get('/', protect, controller.getAll);
+tasksRouter.post('/', protect, controller.create);
+tasksRouter.put('/:id', protect, controller.update);
+tasksRouter.delete('/:id', protect, controller.delete);
 
 export default tasksRouter;

@@ -16,6 +16,7 @@ describe('Users API /api/users', () => {
     it('should create a new user', async () => {
         const newUser = {
             email: "test.user@example.com",
+            password: "password123",
             name: "Test User"
         };
 

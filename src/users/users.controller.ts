@@ -24,12 +24,12 @@ export class UserController{
 
     //POST /api/users
     create = (req: Request, res:Response) =>{
-        const {email, name} = req.body || {};
+        const {email,password , name} = req.body || {};
         if(!email){
             return res.status(400).json({message: "Email is required"});
         }
 
-        const newUser = this.usersService.create(email, name);
+        const newUser = this.usersService.create(email, password, name);
         res.status(201).json(newUser);
     }
 

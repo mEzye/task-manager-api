@@ -6,16 +6,17 @@ export class TaskController{
 
     //GET /api/tasks?userId=1
     getAll = (req: Request, res: Response) =>{
-        const { userId } = req.query;
-        if(!userId){
+        const userId = req.user!.id;
+        if(userId === undefined){
             return res.status(400).json({message: "userId is required as a query parameter"})
         }
-        const tasks = this.taskService.getAll(parseInt(userId as string));
+        const tasks = this.taskService.getAll(userId);
         res.json(tasks);
     }
     //POST /api/tasks
     create = (req: Request, res: Response) => {
-        const { title, userId } = req.body || {};
+        const { title} = req.body || {};
+        const userId = req.user!.id;
         if(!title){
             return res.status(400).json({ message: "title and userId are required in the body" });
         }
@@ -31,15 +32,15 @@ export class TaskController{
     //PUT /api/tasks/:id
     update = (req: Request, res: Response) => {
         const { id: taskId } = req.params;
-        const { userId } = req.query;
+        const userId = req.user!.id;
         const { title, isCompleted } = req.body || {};
 
-        if (!userId) {
+        if (userId === undefined) {
             return res.status(400).json({ message: "userId is required as a query parameter" });
         }
 
         const updatedTask = this.taskService.update(
-            parseInt(userId as string),
+            userId,
             parseInt(taskId),
             title,
             isCompleted
@@ -54,12 +55,12 @@ export class TaskController{
     //DELETE /api/tasks/:id
     delete = (req: Request, res: Response) =>{
         const { id: taskId } = req.params;
-        const { userId } = req.query;
-        if (!userId) {
+        const userId = req.user!.id;
+        if (userId === undefined) {
             return res.status(400).json({ message: "userId is required as a query parameter" });
         }
         const success = this.taskService.delete(
-            parseInt(userId as string),
+            userId,
             parseInt(taskId)
         );
 
