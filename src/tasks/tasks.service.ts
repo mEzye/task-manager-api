@@ -1,4 +1,4 @@
-import { type Task } from "./tasks.types.js";
+import { TaskStatus, type Task } from "./tasks.types.js";
 import usersService, { UsersService } from "../users/users.service.js";
 import { TaskController } from "./tasks.controller.js";
 import usersRouter from "../users/users.routes.js";
@@ -19,7 +19,7 @@ export class TasksService{
         return this.tasksByUserId.get(userID) || [];
     }
 
-    public create(title: string, userID: number): Task | null{
+    public create(userID: number, data: {title: string, description?: string, deadline?: Date}): Task | null{
         const userExists = this.usersService.getById(userID);
         if(!userExists){
             return null;
@@ -34,8 +34,9 @@ export class TasksService{
 
         const newTask: Task = {
             id: newTaskId,
-            title: title,
-            isCompleted: false,
+            title: data.title,
+            description: data.description,
+            status: TaskStatus.TODO,
             createdAt: new Date()
         };
 
@@ -45,7 +46,7 @@ export class TasksService{
         return newTask;
     }
 
-    public update(userId:number, taskId: number, title?: string, isCompleted?: boolean): Task | null{
+    public update(userId:number, taskId: number, data:{title?: string, description?: string, status?:TaskStatus, deadline?: Date}): Task | null{
         const userTasks = this.tasksByUserId.get(userId);
         if(!userTasks){
             return null;
@@ -56,12 +57,19 @@ export class TasksService{
         if(!task){
             return null;
         }
-        if(title !== undefined){
-            task.title = title;
+        if(data.title !== undefined){
+            task.title = data.title;
         }
-        if (isCompleted !== undefined){
-            task.isCompleted = isCompleted;
+        if (data.status !== undefined){
+            task.status = data.status;
         }
+        if(data.description !== undefined){
+            task.description = data.description;
+        }
+        if(data.deadline !== undefined){
+            task.deadline = data.deadline;
+        }
+        task.updatedAt = new Date();
         return task;
     }
 
