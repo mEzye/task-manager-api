@@ -1,138 +1,177 @@
 import request from 'supertest';
-import app from '../app';
-import usersService from '../users/users.service';
-import { TaskStatus } from './tasks.types';
+import app from '../app.js';
+import { TaskStatus } from './tasks.types.js';
 
 describe('Tasks API Integration Tests', () => {
     let tokenUserA: string;
     let tokenUserB: string;
     let taskID_A: number;
 
+    // Setup: Register two different users to test data isolation
     beforeAll(async () => {
-        // Clear data before tests (since we use in-memory storage)
-        // Note: In a real DB, we would truncate tables here.
-        // For now, restarting the test runner clears memory, 
-        // but if we run multiple test files, we might need a clear method.
-        
         // Register User A
         await request(app).post('/api/auth/register').send({
-            email: 'userA@test.com',
-            password: 'passwordA'
+            email: 'taskuserA@test.com',
+            password: 'passwordA',
+            name: 'User A'
         });
         const loginResA = await request(app).post('/api/auth/login').send({
-            email: 'userA@test.com',
+            email: 'taskuserA@test.com',
             password: 'passwordA'
         });
         tokenUserA = loginResA.body.accessToken;
 
         // Register User B
         await request(app).post('/api/auth/register').send({
-            email: 'userB@test.com',
-            password: 'passwordB'
+            email: 'taskuserB@test.com',
+            password: 'passwordB',
+            name: 'User B'
         });
         const loginResB = await request(app).post('/api/auth/login').send({
-            email: 'userB@test.com',
+            email: 'taskuserB@test.com',
             password: 'passwordB'
         });
         tokenUserB = loginResB.body.accessToken;
     });
 
-    // GET /api/tasks (Empty)
-    it('should return empty list initially for User A', async () => {
-        const res = await request(app)
-            .get('/api/tasks')
-            .set('Authorization', `Bearer ${tokenUserA}`);
-        
-        expect(res.status).toBe(200);
-        expect(res.body).toEqual([]);
+    describe('POST /api/tasks', () => {
+        // Test creation with all available fields
+        it('should create a task with full details (desc, status, deadline)', async () => {
+            const newTask = { 
+                title: 'Complex Task',
+                description: 'Detailed description for testing',
+                status: TaskStatus.IN_PROGRESS,
+                deadline: new Date('2025-12-31').toISOString()
+            };
+
+            const res = await request(app)
+                .post('/api/tasks')
+                .set('Authorization', `Bearer ${tokenUserA}`)
+                .send(newTask);
+
+            expect(res.status).toBe(201);
+            expect(res.body.title).toBe(newTask.title);
+            expect(res.body.description).toBe(newTask.description);
+            expect(res.body.status).toBe(TaskStatus.IN_PROGRESS);
+            expect(res.body.deadline).toBe(newTask.deadline);
+            expect(res.body.id).toBeDefined();
+            
+            taskID_A = res.body.id;
+        });
+
+        // Test validation for invalid data types
+        it('should return 400 if deadline is invalid', async () => {
+            const res = await request(app)
+                .post('/api/tasks')
+                .set('Authorization', `Bearer ${tokenUserA}`)
+                .send({ 
+                    title: 'Invalid Task',
+                    deadline: "this-is-not-a-date" 
+                });
+
+            expect(res.status).toBe(400);
+            expect(res.body.message).toMatch(/invalid/i);
+        });
     });
 
-    // POST /api/tasks (User A)
-    it('should create a task for User A', async () => {
-        const res = await request(app)
-            .post('/api/tasks')
-            .set('Authorization', `Bearer ${tokenUserA}`)
-            .send({ 
-                title: 'Task A1',
-                description: 'Description for A1',
-                deadline: new Date().toISOString()
-            });
+    describe('GET /api/tasks', () => {
+        // Verify User A sees their task
+        it('should return the created task for User A', async () => {
+            const res = await request(app)
+                .get('/api/tasks')
+                .set('Authorization', `Bearer ${tokenUserA}`);
 
-        expect(res.status).toBe(201);
-        expect(res.body.title).toBe('Task A1');
-        expect(res.body.status).toBe(TaskStatus.TODO);
-        expect(res.body.id).toBeDefined();
-        
-        taskID_A = res.body.id;
+            expect(res.status).toBe(200);
+            expect(res.body.length).toBeGreaterThanOrEqual(1);
+            const task = res.body.find((t: any) => t.id === taskID_A);
+            expect(task).toBeDefined();
+            expect(task.title).toBe('Complex Task');
+        });
+
+        // Verify isolation: User B should see 0 tasks
+        it('should return empty list for User B (isolation check)', async () => {
+            const res = await request(app)
+                .get('/api/tasks')
+                .set('Authorization', `Bearer ${tokenUserB}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.length).toBe(0);
+        });
     });
 
-    // GET /api/tasks (User A - should have 1 task)
-    it('should return 1 task for User A', async () => {
-        const res = await request(app)
-            .get('/api/tasks')
-            .set('Authorization', `Bearer ${tokenUserA}`);
+    describe('PUT /api/tasks/:id', () => {
+        // Test Full Update: Changing all fields at once
+        it('should fully update the task (title, desc, status)', async () => {
+            const fullUpdate = { 
+                title: 'Completely New Title',
+                description: 'New Description',
+                status: TaskStatus.DONE
+            };
 
-        expect(res.status).toBe(200);
-        expect(res.body.length).toBe(1);
-        expect(res.body[0].id).toBe(taskID_A);
+            const res = await request(app)
+                .put(`/api/tasks/${taskID_A}`)
+                .set('Authorization', `Bearer ${tokenUserA}`)
+                .send(fullUpdate);
+
+            expect(res.status).toBe(200);
+            expect(res.body.title).toBe(fullUpdate.title);
+            expect(res.body.description).toBe(fullUpdate.description);
+            expect(res.body.status).toBe(TaskStatus.DONE);
+        });
+
+        // Test Partial Update: Changing only one field shouldn't erase others
+        it('should partially update the task (only status) without erasing description', async () => {
+            // We only send status, expecting title and desc to remain from previous test
+            const partialUpdate = { 
+                status: TaskStatus.TODO
+            };
+
+            const res = await request(app)
+                .put(`/api/tasks/${taskID_A}`)
+                .set('Authorization', `Bearer ${tokenUserA}`)
+                .send(partialUpdate);
+
+            expect(res.status).toBe(200);
+            expect(res.body.status).toBe(TaskStatus.TODO); // Changed
+            expect(res.body.title).toBe('Completely New Title'); // Should be preserved
+            expect(res.body.description).toBe('New Description'); // Should be preserved
+        });
+
+        // Security: User B cannot update User A's task
+        it('should NOT allow User B to update User A task', async () => {
+            const res = await request(app)
+                .put(`/api/tasks/${taskID_A}`)
+                .set('Authorization', `Bearer ${tokenUserB}`)
+                .send({ title: 'Hacked Title' });
+
+            expect(res.status).toBe(404); 
+        });
     });
 
-    // GET /api/tasks (User B - should have 0 tasks)
-    it('should return 0 tasks for User B (isolation)', async () => {
-        const res = await request(app)
-            .get('/api/tasks')
-            .set('Authorization', `Bearer ${tokenUserB}`);
+    describe('DELETE /api/tasks/:id', () => {
+        // Security: User B cannot delete User A's task
+        it('should NOT allow User B to delete User A task', async () => {
+            const res = await request(app)
+                .delete(`/api/tasks/${taskID_A}`)
+                .set('Authorization', `Bearer ${tokenUserB}`);
 
-        expect(res.status).toBe(200);
-        expect(res.body.length).toBe(0);
-    });
+            expect(res.status).toBe(404);
+        });
 
-    // PUT /api/tasks/:id (User A - update status)
-    it('should update User A task', async () => {
-        const res = await request(app)
-            .put(`/api/tasks/${taskID_A}`)
-            .set('Authorization', `Bearer ${tokenUserA}`)
-            .send({ 
-                status: TaskStatus.DONE,
-                title: 'Task A1 Updated'
-            });
+        // Success: User A deletes their own task
+        it('should allow User A to delete own task', async () => {
+            const res = await request(app)
+                .delete(`/api/tasks/${taskID_A}`)
+                .set('Authorization', `Bearer ${tokenUserA}`);
 
-        expect(res.status).toBe(200);
-        expect(res.body.status).toBe(TaskStatus.DONE);
-        expect(res.body.title).toBe('Task A1 Updated');
-    });
+            expect(res.status).toBe(204);
 
-    // PUT /api/tasks/:id (User B - try to update User A's task)
-    it('should NOT allow User B to update User A task', async () => {
-        const res = await request(app)
-            .put(`/api/tasks/${taskID_A}`)
-            .set('Authorization', `Bearer ${tokenUserB}`)
-            .send({ title: 'Hacked Title' });
-
-        expect(res.status).toBe(404); 
-    });
-
-    // DELETE /api/tasks/:id (User B - try to delete User A's task)
-    it('should NOT allow User B to delete User A task', async () => {
-        const res = await request(app)
-            .delete(`/api/tasks/${taskID_A}`)
-            .set('Authorization', `Bearer ${tokenUserB}`);
-
-        expect(res.status).toBe(404);
-    });
-
-    // DELETE /api/tasks/:id (User A - delete own task)
-    it('should allow User A to delete own task', async () => {
-        const res = await request(app)
-            .delete(`/api/tasks/${taskID_A}`)
-            .set('Authorization', `Bearer ${tokenUserA}`);
-
-        expect(res.status).toBe(204);
-
-        // Verify it's gone
-        const check = await request(app)
-            .get('/api/tasks')
-            .set('Authorization', `Bearer ${tokenUserA}`);
-        expect(check.body.length).toBe(0);
+            // Verify it's gone
+            const check = await request(app)
+                .get('/api/tasks')
+                .set('Authorization', `Bearer ${tokenUserA}`);
+            const deletedTask = check.body.find((t: any) => t.id === taskID_A);
+            expect(deletedTask).toBeUndefined();
+        });
     });
 });
