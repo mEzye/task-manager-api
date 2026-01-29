@@ -6,14 +6,29 @@ import { TaskCard } from '../components/TaskCard';
 import { TaskModal } from '../components/TaskModal';
 
 /**
+ * User Profile Interface
+ */
+interface UserProfile {
+  id: number;
+  email: string;
+  name?: string;
+}
+
+/**
  * TasksPage Component
  * -------------------
  * Main dashboard for the user.
- * Displays tasks, handles CRUD operations.
+ * Displays tasks and handles CRUD operations.
  */
 const TasksPage = () => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
+  
+  /** 
+   * State for the current user's profile data.
+   * This will be populated by the GET /api/users/me endpoint.
+   */
+  const [user, setUser] = useState<UserProfile | null>(null);
   
   // UI State for Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,13 +36,6 @@ const TasksPage = () => {
   
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
-
-  // Retrieve token for UI display
-  // Note: We use this purely for display. The real auth check happens via API calls.
-  const token = localStorage.getItem('accessToken') || '';
-  
-  // Create a display name (snippet) from the token
-  const userSnippet = token.length > 10 ? `${token.substring(0, 8)}...` : 'User';
 
   const currentDate = new Date().toLocaleDateString('uk-UA', { 
     weekday: 'long', 
@@ -39,14 +47,28 @@ const TasksPage = () => {
   // --- Effects ---
 
   useEffect(() => {
+    // Initial data load on component mount
     fetchTasks();
+    fetchUserProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
-   * Fetch all tasks from the API.
-   * If the user is invalid (401), the Axios interceptor (client.ts) handles the redirect.
-   * However, we also catch errors here to prevent UI glitches.
+   * Fetches the current user's profile information from the backend.
+   * Target endpoint: GET /api/users/me
+   */
+  const fetchUserProfile = async () => {
+    try {
+      const res = await client.get('/users/me');
+      setUser(res.data);
+    } catch (err) {
+      console.error('Failed to fetch user profile. Ensure the endpoint GET /api/users/me is implemented.', err);
+      // Fail silently for UI, Axios interceptor will handle 401 Unauthorized if needed
+    }
+  };
+
+  /**
+   * Fetch all tasks owned by the current user.
    */
   const fetchTasks = async () => {
     try {
@@ -54,8 +76,6 @@ const TasksPage = () => {
       setTasks(res.data);
     } catch (err) {
       console.error('Error fetching tasks:', err);
-      
-      // Fallback: If axios interceptor cleared storage but didn't redirect fast enough
       if (!localStorage.getItem('accessToken')) {
         navigate('/login');
       }
@@ -82,10 +102,10 @@ const TasksPage = () => {
         await client.post('/tasks', data);
       }
       setIsModalOpen(false);
-      fetchTasks(); // Refresh list
+      fetchTasks();
     } catch (err) {
       console.error('Failed to save task', err);
-      alert('Error saving task. Please try again.');
+      alert('Error saving task.');
     }
   };
 
@@ -100,7 +120,7 @@ const TasksPage = () => {
         await client.delete(`/tasks/${taskToDelete}`);
         setIsDeleteModalOpen(false);
         setTaskToDelete(null);
-        fetchTasks(); // Refresh list
+        fetchTasks();
       } catch (err) {
         console.error('Delete failed', err);
         alert('Could not delete task.');
@@ -109,7 +129,6 @@ const TasksPage = () => {
   };
 
   const handleLogout = () => {
-    // Manually clear tokens and redirect
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     navigate('/login');
@@ -134,9 +153,18 @@ const TasksPage = () => {
         <h1 style={{ margin: 0, fontSize: '1.5rem', letterSpacing: '1px' }}>Task Manager</h1>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <span style={{ fontSize: '0.9rem', color: 'var(--accent)', fontFamily: 'monospace' }}>
-            ID: {userSnippet}
-          </span>
+          {/* 
+            DYNAMIC USER INFO:
+            Displays the name fetched from the server. Falls back to a generic label if still loading.
+          */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <span style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 'bold' }}>
+              {user?.name || 'Welcome!'}
+            </span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              {user?.email || 'Syncing...'}
+            </span>
+          </div>
           <button className="secondary" onClick={handleLogout} style={{ padding: '5px 10px', fontSize: '0.8rem' }}>
             Exit
           </button>
@@ -168,7 +196,7 @@ const TasksPage = () => {
         </div>
       )}
 
-      {/* CREATE / EDIT MODAL */}
+      {/* MODALS */}
       <TaskModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -176,7 +204,6 @@ const TasksPage = () => {
         initialData={editingTask}
       />
 
-      {/* DELETE CONFIRMATION MODAL */}
       {isDeleteModalOpen && (
         <div className="modal-overlay" onClick={() => setIsDeleteModalOpen(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>

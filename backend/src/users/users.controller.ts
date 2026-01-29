@@ -1,5 +1,6 @@
 import {type Request, type Response} from 'express';
 import usersService from './users.service.js';
+import usersRouter from './users.routes.js';
 
 export class UserController{
     private usersService = usersService;
@@ -8,6 +9,22 @@ export class UserController{
     getAll = (req: Request, res: Response) =>{
         const users = this.usersService.getAll();
         res.json(users);
+    }
+    //GET /api/users/me
+    getMe = (req: Request, res: Response) => {
+        const userId = req.user?.id;
+        if(userId === undefined){
+            return res.status(401).json({message: "Not autthorized"});
+        }
+        const user = this.usersService.getById(userId);
+        if (user == null){
+            return res.status(404).json({message: "User not found"});
+        }
+        
+        const {email, name} = user;
+
+        res.json({email, name});
+        
     }
     
     // GET /api/users/:id
