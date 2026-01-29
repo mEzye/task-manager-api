@@ -17,7 +17,7 @@ export class TaskController{
     }
     //POST /api/tasks
     create = (req: Request, res: Response) => {
-        const { title, description, deadline} = req.body || {};
+        const { title, description, deadline,status} = req.body || {};
         const userId = req.user!.id;
         if(!title){
             return res.status(400).json({ message: "title and userId are required in the body" });
@@ -31,7 +31,8 @@ export class TaskController{
         const newTask = this.taskService.create(userId, {
             title,
             description,
-            deadline: parsedDeadline
+            deadline: parsedDeadline,
+            status: status
         });
         if (!newTask) {
             return res.status(404).json({ message: "User not found, cannot create task" });

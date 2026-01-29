@@ -1,9 +1,11 @@
 import express from 'express';
+import cors from 'cors';
 import tasksRouter from './tasks/tasks.routes.js';
 import usersRouter from './users/users.routes.js';
 import authRouter from './auth/auth.routes.js'
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 app.use('/api/tasks', tasksRouter);

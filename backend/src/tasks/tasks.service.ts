@@ -19,7 +19,7 @@ export class TasksService{
         return this.tasksByUserId.get(userID) || [];
     }
 
-    public create(userID: number, data: {title: string, description?: string, deadline?: Date}): Task | null{
+    public create(userID: number, data: {title: string, description?: string, deadline?: Date, status?: TaskStatus}): Task | null{
         const userExists = this.usersService.getById(userID);
         if(!userExists){
             return null;
@@ -31,12 +31,13 @@ export class TasksService{
         }
 
         const newTaskId = this.nextTaskIds.get(userID)!;
-
+        const newStatus = data.status ? data.status : TaskStatus.TODO;
         const newTask: Task = {
             id: newTaskId,
             title: data.title,
             description: data.description,
-            status: TaskStatus.TODO,
+            deadline: data.deadline,
+            status: newStatus,
             createdAt: new Date()
         };
 
