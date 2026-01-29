@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import usersService from "../users/users.service.js";
 
 const ACCESS_TOKEN_SECRET = 'access-secret-key-123';
 
@@ -27,6 +28,10 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
         const payload = jwt.verify(token, ACCESS_TOKEN_SECRET) as TokenPayload;
 
         req.user = {id: payload.id, email: payload.email};
+        const user = usersService.getById(payload.id)
+        if (user == null){
+            return res.status(401).json({message: "Not authorized (invalid token)"});
+        }
         
         next();
     } catch(e){
