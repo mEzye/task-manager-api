@@ -1,0 +1,24 @@
+import { z } from 'zod';
+import { TaskStatus } from './tasks.types.js';
+import { title } from 'process';
+
+export const createTaskSchema = z.object({
+    title: z.string()
+    .min(1, {error: "Title is requred"})
+    .max(100, {error: "Title cannot exeed 100 characters"}),
+    description: z.string().optional(),
+    status: z.enum(TaskStatus).optional(),
+    deadline: z.iso.datetime().optional,
+});
+
+export const updateTaskSchema = z.object({
+    title: z.string()
+    .min(1, {error: "Title is requred"})
+    .max(100, {error: "Title cannot exeed 100 characters"})
+    .optional(),
+    description: z.enum(TaskStatus).optional(),
+    deadline: z.iso.datetime().optional(),
+});
+
+export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;

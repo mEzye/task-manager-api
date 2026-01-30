@@ -19,14 +19,9 @@ export class TaskController{
     create = (req: Request, res: Response) => {
         const { title, description, deadline,status} = req.body || {};
         const userId = req.user!.id;
-        if(!title){
-            return res.status(400).json({ message: "title and userId are required in the body" });
-        }
+        
 
         const parsedDeadline = deadline ? new Date(deadline) : undefined;
-        if (parsedDeadline && isNaN(parsedDeadline.getTime())){
-            return res.status(400).json({ message: "Invalid date format" });
-        }
 
         const newTask = this.taskService.create(userId, {
             title,
@@ -51,17 +46,8 @@ export class TaskController{
             return res.status(400).json({ message: "userId is required as a query parameter" });
         }
 
-        if (title !== undefined && title.trim() === "") {
-             return res.status(400).json({ message: "Title cannot be empty" });
-        }
-
-        if(status && !Object.values(TaskStatus).includes(status)){
-            return res.status(400).json({ message: "Invalid status value" });
-        }
+        
         const parsedDeadline = deadline ? new Date(deadline) : undefined;
-        if(parsedDeadline && isNaN(parsedDeadline.getTime())){
-            return res.status(400).json({ message: "Invalid deadline format" });
-        }
 
         const updatedTask = this.taskService.update(
             userId,
