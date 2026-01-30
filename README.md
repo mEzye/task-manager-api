@@ -82,7 +82,7 @@ npm run dev
 
 To run integration tests, execute the following in the `backend` folder:
 ```bash
-npm test
+npm run test
 ```
 
 ## 📖 API Documentation (Endpoints)
