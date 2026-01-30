@@ -11,9 +11,9 @@
     "db:init": "prisma db push",
     "db:reset": "prisma migrate reset --force"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["task-manager"],
+  "author": "mEzy",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "@prisma/client": "^5.22.0",
