@@ -6,17 +6,17 @@ export class UserController{
     private usersService = usersService;
 
     //GET /api/users
-    getAll = (req: Request, res: Response) =>{
-        const users = this.usersService.getAll();
+    getAll = async (req: Request, res: Response) =>{
+        const users = await this.usersService.getAll();
         res.json(users);
     }
     //GET /api/users/me
-    getMe = (req: Request, res: Response) => {
+    getMe = async (req: Request, res: Response) => {
         const userId = req.user?.id;
         if(userId === undefined){
             return res.status(401).json({message: "Not autthorized"});
         }
-        const user = this.usersService.getById(userId);
+        const user = await this.usersService.getById(userId);
         if (user == null){
             return res.status(404).json({message: "User not found"});
         }
@@ -28,9 +28,9 @@ export class UserController{
     }
     
     // GET /api/users/:id
-    getById = (req: Request, res: Response) => {
-        const { id } = req.params;
-        const user = this.usersService.getById(parseInt(id));
+    getById = async (req: Request, res: Response) => {
+        const id = req.params.id as string;
+        const user = await this.usersService.getById(parseInt(id));
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -40,31 +40,31 @@ export class UserController{
     }
 
     //POST /api/users
-    create = (req: Request, res:Response) =>{
+    create = async (req: Request, res:Response) =>{
         const {email,password , name} = req.body || {};
         if(!email){
             return res.status(400).json({message: "Email is required"});
         }
 
-        const newUser = this.usersService.create(email, password, name);
+        const newUser = await this.usersService.create(email, password, name);
         res.status(201).json(newUser);
     }
 
     //PUT /api/users/:id
-    update = (req: Request, res: Response) => {
-        const {id} = req.params;
+    update = async (req: Request, res: Response) => {
+        const id = req.params.id as string;
         const {email, name} = req.body || {};
 
-        const updateUser = this.usersService.update(parseInt(id), email, name);
+        const updateUser = await this.usersService.update(parseInt(id), email, name);
         if(!updateUser){
             return res.status(404).json({message: "User not found"});
         }
         res.json(updateUser);
     }
     //DELETE /api/users/:id
-    delete = (req: Request, res: Response) => {
-        const {id} = req.params;
-        const success = this.usersService.delete(parseInt(id));
+    delete = async (req: Request, res: Response) => {
+        const id = req.params.id as string;
+        const success = await this.usersService.delete(parseInt(id));
         
         if(!success){
             return res.status(404).json({message: "User not found"});

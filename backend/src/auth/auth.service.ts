@@ -11,13 +11,13 @@ const REFRESH_TOKEN_SECRET = 'refresh-secret-key-789';
 export class AuthService{
     private usersService = usersService;
     public async register(email: string, password: string, name?: string): Promise<Omit<User, 'password'> | null>{
-        const candidate = this.usersService.findByEmail(email);
+        const candidate = await this.usersService.findByEmail(email);
         if (candidate){
             return null;
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = this.usersService.create(email, hashedPassword, name);
+        const newUser = await this.usersService.create(email, hashedPassword, name);
         const {password: _, ...userWithoutPassword} = newUser;
 
         return userWithoutPassword;
@@ -27,7 +27,7 @@ export class AuthService{
         if(!email || !password){
             return null;
         }
-        const user = this.usersService.findByEmail(email);
+        const user = await this.usersService.findByEmail(email);
         if(!user){
             return null;
         }
@@ -44,7 +44,7 @@ export class AuthService{
         try{
             const payload = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as {id:number, email:string};
 
-            const user = this.usersService.findByEmail(payload.email);
+            const user = await this.usersService.findByEmail(payload.email);
             if(!user){
                 return null;
             }

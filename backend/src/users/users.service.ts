@@ -1,12 +1,12 @@
 import { type User } from "./users.types.js";
-
+import  prisma from "../prisma.js"
 export class UsersService{
-    private users: User[] = [];
+    // private users: User[] = [];
 
-    private nextID: number = 0;
+    // private nextID: number = 0;
 
-    public getById(id: number): User | null {
-        const user = this.users.find(u => u.id === id);
+    public async getById(id: number): Promise<User | null> {
+        const user = await prisma.user.findUnique({where: {id}});
         if(!user){
             return null;
         }
@@ -14,53 +14,57 @@ export class UsersService{
         return user;
     }
 
-    public findByEmail(email:string) : User | null{
+    public async findByEmail(email:string) : Promise<User | null>{
         if(!email){
             return null;
         }
-        const user = this.users.find(u => u.email === email);
+        const user = await prisma.user.findUnique({
+            where : { email }
+        })
         if(!user){
             return null;
         }
         return user;
     }
 
-    public getAll(): User[]{
-        return this.users;
+    public async getAll(): Promise<User[]> {
+        return await prisma.user.findMany();
     }
 
-    public create(email: string, password:string, name?:string) : User{
-        const newUser: User = {
-            id: this.nextID++,
-            email: email,
-            name: name,
-            password:password
-        };
-        this.users.push(newUser);
-        return newUser;
+    public async create(email: string, password:string, name?:string) : Promise<User>{
+        return await prisma.user.create({
+            data: {
+                email,
+                password,
+                name
+            }
+        });
     }
 
-    public update(id:number, email: string, name?: string) : User | null{
-        const user = this.users.find(t => t.id === id);
+    public async update(id:number, email?: string, name?: string) : Promise<User | null>{
+        const user = prisma.user.findUnique({where : {id}});
         if(!user){
             return null;
         }
 
-        if(email !== undefined){
-            user.email = email;
-        }
-        if(name !== undefined){
-            user.name = name;
-        }
-        return user;
+        return await prisma.user.update({
+            where: {id},
+            data: {
+                email,
+                name
+            }
+        });
     }
-    public delete(id: number): boolean{
-        const userIndex = this.users.findIndex(t => t.id === id);
-        if(userIndex === -1){
-            return false
+    public async delete(id: number): Promise<boolean>{
+        try{
+            await prisma.user.delete({
+                where: {id}
+            });
+            return true;
         }
-        this.users.splice(userIndex, 1);
-        return true;
+        catch(error){
+            return false;
+        }
     }
 }
 
