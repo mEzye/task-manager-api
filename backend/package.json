@@ -7,7 +7,9 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate", 
+    "db:init": "prisma db push",
+    "db:reset": "prisma migrate reset --force"
   },
   "keywords": [],
   "author": "",
