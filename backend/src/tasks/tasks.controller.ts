@@ -7,81 +7,99 @@ export class TaskController{
     private taskService = tasksService;
 
     //GET /api/tasks?userId=1
-    getAll = (req: Request, res: Response) =>{
+    getAll = async (req: Request, res: Response) =>{
         const userId = req.user!.id;
         if(userId === undefined){
             return res.status(400).json({message: "userId is required as a query parameter"})
         }
-        const tasks = this.taskService.getAll(userId);
+        const tasks = await this.taskService.getAll(userId);
         res.json(tasks);
     }
     //POST /api/tasks
-    create = (req: Request, res: Response) => {
-        const { title, description, deadline,status} = req.body || {};
-        const userId = req.user!.id;
-        
+    create = async (req: Request, res: Response) => {
+        try {
+            const { title, description, deadline, status } = req.body || {};
+            const userId = req.user!.id;
 
-        const parsedDeadline = deadline ? new Date(deadline) : undefined;
+            if (!title) {
+                return res.status(400).json({ message: "Title is required" });
+            }
 
-        const newTask = this.taskService.create(userId, {
-            title,
-            description,
-            deadline: parsedDeadline,
-            status: status
-        });
-        if (!newTask) {
-            return res.status(404).json({ message: "User not found, cannot create task" });
+            const parsedDeadline = deadline ? new Date(deadline) : undefined;
+
+            const newTask = await this.taskService.create(userId, {
+                title,
+                description,
+                deadline: parsedDeadline,
+                status: status as TaskStatus
+            });
+
+            res.status(201).json(newTask);
+        } catch (error) {
+            console.error("Create Error:", error);
+            res.status(500).json({ message: "Internal server error" });
         }
-
-        res.status(201).json(newTask);
     }
 
     //PUT /api/tasks/:id
-    update = (req: Request, res: Response) => {
-        const { id: taskId } = req.params;
-        const userId = req.user!.id;
-        const { title, description, status, deadline } = req.body || {};
+    update = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            const taskId = Number(id);
+            const userId = req.user!.id;
+            const { title, description, status, deadline } = req.body || {};
 
-        if (userId === undefined) {
-            return res.status(400).json({ message: "userId is required as a query parameter" });
-        }
-
-        
-        const parsedDeadline = deadline ? new Date(deadline) : undefined;
-
-        const updatedTask = this.taskService.update(
-            userId,
-            parseInt(taskId),
-            {
-                title,
-                description,
-                status,
-                deadline: parsedDeadline
+            if (isNaN(taskId)) {
+                return res.status(400).json({ message: "Invalid Task ID" });
             }
-        );
 
-        if (!updatedTask) {
-            return res.status(404).json({ message: "Task not found or user does not own this task" });
+            const parsedDeadline = deadline ? new Date(deadline) : undefined;
+
+            const updatedTask = await this.taskService.update(
+                userId,
+                taskId,
+                {
+                    title,
+                    description,
+                    status,
+                    deadline: parsedDeadline
+                }
+            );
+
+            if (!updatedTask) {
+                return res.status(404).json({ message: "Task not found or user does not own this task" });
+            }
+            res.json(updatedTask);
+        } catch (error) {
+            console.error("Update Error:", error);
+            res.status(500).json({ message: "Internal server error" });
         }
-        res.json(updatedTask);
     }
 
     //DELETE /api/tasks/:id
-    delete = (req: Request, res: Response) =>{
-        const { id: taskId } = req.params;
-        const userId = req.user!.id;
-        if (userId === undefined) {
-            return res.status(400).json({ message: "userId is required as a query parameter" });
-        }
-        const success = this.taskService.delete(
-            userId,
-            parseInt(taskId)
-        );
+    delete = async (req: Request, res: Response) =>{
+        try {
+            const { id } = req.params;
+            const taskId = Number(id);
+            const userId = req.user!.id;
 
-        if (!success) {
-            return res.status(404).json({ message: "Task not found or user does not own this task" });
-        }
+            if (isNaN(taskId)) {
+                return res.status(400).json({ message: "Invalid Task ID" });
+            }
 
-        res.status(204).send();
+            const success = await this.taskService.delete(
+                userId,
+                taskId
+            );
+
+            if (!success) {
+                return res.status(404).json({ message: "Task not found" });
+            }
+
+            res.status(204).send();
+        } catch (error) {
+            console.error("Delete Error:", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
     }
 }

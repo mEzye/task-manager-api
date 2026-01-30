@@ -1,11 +1,12 @@
-// Замість enum використовуємо об'єкт (Object Literal)
+// src/types/task.ts
+
+// ВИПРАВЛЕНИЙ КОД: Значення мають бути ВЕЛИКИМИ літерами, як в базі даних
 export const TaskStatus = {
-  TODO: 'todo',
-  IN_PROGRESS: 'in_progress',
-  DONE: 'done'
+  TODO: 'TODO',              // Було 'todo'
+  IN_PROGRESS: 'IN_PROGRESS', // Було 'in_progress'
+  DONE: 'DONE'               // Було 'done'
 } as const;
 
-// Створюємо тип на основі значень цього об'єкта
 export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus];
 
 export interface Task {
@@ -13,7 +14,7 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
-  deadline?: string; // Backend sends string (ISO)
+  deadline?: string; 
   createdAt?: string;
   updatedAt?: string;
 }

@@ -1,14 +1,23 @@
 import request from "supertest";
 import app from "../app.js";
+import prisma from "../prisma.js";
 
 describe('Auth API', () => {
+    // Generate unique email to avoid conflicts
+    const uniqueId = Date.now();
     const testUser = {
-        email: "auth-test@example.com",
+        email: `auth-${uniqueId}@example.com`,
         password: "password123",
         name: "Auth Tester"
     };
 
     let refreshToken: string;
+
+    // Cleanup: Clear users table before running auth tests
+    beforeAll(async () => {
+        await prisma.task.deleteMany();
+        await prisma.user.deleteMany();
+    });
 
     it('should register a new user', async () => {
         const response = await request(app)
@@ -38,7 +47,6 @@ describe('Auth API', () => {
             });
 
         expect(response.status).toBe(200);
-
         expect(response.body.accessToken).toBeDefined();
         expect(response.body.refreshToken).toBeDefined();
 
@@ -64,7 +72,6 @@ describe('Auth API', () => {
         expect(response.status).toBe(200);
         expect(response.body.accessToken).toBeDefined();
         expect(response.body.refreshToken).toBeDefined();
-        
         expect(response.body.refreshToken).not.toBe(refreshToken);
     });
 });
