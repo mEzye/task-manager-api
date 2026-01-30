@@ -8,6 +8,10 @@ export class AuthController{
     register = async (req: Request, res: Response) => {
         const {email, password, name} = req.body;
 
+        if(!email || !password){
+            return res.status(400).json({message: "Email and password are required"});
+        }
+
         try{
             const newUser = await this.authService.register(email, password, name);
 
@@ -24,6 +28,10 @@ export class AuthController{
     //POST /api/auth/login
     login = async (req: Request, res: Response) =>{
         const {email, password} = req.body;
+
+        if(!email || !password){
+            return res.status(400).json({message:"Email and password are required"});
+        }
 
         const tokens = await this.authService.login(email, password);
 

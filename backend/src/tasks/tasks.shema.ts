@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { TaskStatus } from './tasks.types.js';
-import { title } from 'process';
 
 export const createTaskSchema = z.object({
     title: z.string()
@@ -8,15 +7,16 @@ export const createTaskSchema = z.object({
     .max(100, {error: "Title cannot exeed 100 characters"}),
     description: z.string().optional(),
     status: z.enum(TaskStatus).optional(),
-    deadline: z.iso.datetime().optional,
+    deadline: z.iso.datetime().optional(),
 });
 
 export const updateTaskSchema = z.object({
     title: z.string()
-    .min(1, {error: "Title is requred"})
-    .max(100, {error: "Title cannot exeed 100 characters"})
-    .optional(),
-    description: z.enum(TaskStatus).optional(),
+        .min(1, { error: "Title is required" })
+        .max(100, { error: "Title cannot exceed 100 characters" })
+        .optional(),
+    description: z.string().optional(),
+    status: z.enum(TaskStatus).optional(),
     deadline: z.iso.datetime().optional(),
 });
 

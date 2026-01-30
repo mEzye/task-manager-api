@@ -70,7 +70,7 @@ describe('Tasks API Integration Tests', () => {
                 });
 
             expect(res.status).toBe(400);
-            expect(res.body.message).toMatch(/invalid/i);
+            expect(res.body.errors[0].message).toMatch(/invalid/i);
         });
     });
 
