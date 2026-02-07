@@ -49,7 +49,6 @@ npm install
 Create a `.env` file in the `backend` folder and add your data (use `.env.example` as a template):
 ```env
 DATABASE_URL="your_postgresql_link"
-PORT=3000
 ```
 
 Initialize the database (Prisma):
@@ -83,7 +82,7 @@ npm run dev
 
 To run integration tests, execute the following in the `backend` folder:
 ```bash
-npm test
+npm run test
 ```
 
 ## 📖 API Documentation (Endpoints)
